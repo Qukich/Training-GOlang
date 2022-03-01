@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -39,7 +39,7 @@ type Departure struct {
 }
 
 type Departure2 struct {
-	Name [3]byte `json:"name"` //USD = 0, EUR = 1
+	Name [3]byte `json:"name"`
 	Sell float64 `json:"sell"`
 	Time int64   `json:"time"`
 }
@@ -47,6 +47,7 @@ type Departure2 struct {
 var result Response
 var epochNow int64
 var arr [3]byte
+var count uint16 = 0
 
 func main() {
 
@@ -57,18 +58,24 @@ func main() {
 	}
 	go backgroundTask(res)
 	time.Sleep(2 * time.Second)
+	app.Get("/api/v1/history/:value/t=*", func(c *fiber.Ctx) error {
+		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
+		mass2 := ReadBinaryTime(c.Params("value"), timeStamp)
+		jsonMass2, err := json.Marshal(mass2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return c.Send(jsonMass2)
+	})
 
-	app.Get("/api/v1/rate/:value", func(c *fiber.Ctxы) error {
-		mass1 := ReadBinary("USD")
+	app.Get("/api/v1/rate/:value", func(c *fiber.Ctx) error {
+		mass1 := ReadBinary(c.Params("value"))
 		jsonMass, err := json.Marshal(mass1)
 		if err != nil {
 			log.Fatal(err)
 		}
+		//string(mass1.Name[:])
 		return c.Send(jsonMass)
-	})
-
-	app.Get("/api/v1/history/", func(c *fiber.Ctx) error {
-		return c.Send([]byte("В разработке"))
 	})
 
 	app.Listen(":3000")
@@ -92,18 +99,21 @@ func backgroundTask(res *http.Response) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var bin_buf bytes.Buffer
+	var binBuf bytes.Buffer
 
 	for _, p := range result.Payload.Rates {
 		if (p.Category == "C2CTransfers") && ((p.FromCurrency.Name == "USD") || (p.FromCurrency.Name == "EUR")) && (p.ToCurrency.Name == "RUB") {
 			copy(arr[:], p.FromCurrency.Name)
-			binary.Write(&bin_buf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
-			writeNextBytes(file, bin_buf.Bytes())
+			binary.Write(&binBuf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
+			writeNextBytes(file, binBuf.Bytes())
+			//fmt.Println(binBuf)
+			binBuf.Reset()
+			count++
 		}
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
-	for _ = range ticker.C {
+	ticker := time.NewTicker(10 * time.Second)
+	for range ticker.C {
 		body, err := ioutil.ReadAll(res.Body)
 		if err != nil {
 			log.Fatal(err)
@@ -114,8 +124,11 @@ func backgroundTask(res *http.Response) {
 		for _, p := range result.Payload.Rates {
 			if (p.Category == "C2CTransfers") && ((p.FromCurrency.Name == "USD") || (p.FromCurrency.Name == "EUR")) && (p.ToCurrency.Name == "RUB") {
 				copy(arr[:], p.FromCurrency.Name)
-				binary.Write(&bin_buf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
-				writeNextBytes(file, bin_buf.Bytes())
+				binary.Write(&binBuf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
+				writeNextBytes(file, binBuf.Bytes())
+				//fmt.Println(binBuf)
+				binBuf.Reset()
+				count++
 			}
 		}
 	}
@@ -129,7 +142,7 @@ func writeNextBytes(file *os.File, bytes []byte) {
 	}
 }
 
-func ReadBinary(Name string) (date Departure2) {
+func ReadBinary(Name string) (date Departure) {
 	file, err := os.Open("test2.bin")
 	defer file.Close()
 	if err != nil {
@@ -137,18 +150,48 @@ func ReadBinary(Name string) (date Departure2) {
 	}
 
 	m := Departure2{}
+	//var nameValute []byte
 
-	for i := 0; i < 3; i++ {
+	for i := count; i > 0; i-- {
 		data := readNextBytes(file, 19)
 		buffer := bytes.NewBuffer(data)
 		err = binary.Read(buffer, binary.BigEndian, &m)
 		if err != nil {
 			log.Fatal("binary.Read failed", err)
 		}
-		fmt.Println(m)
+		//fmt.Println(string(m.Name[:]))
+		if (string(m.Name[:]) == Name) && (m.Time == epochNow) {
+			date = Departure{Sell: m.Sell, Time: m.Time}
+			break
+		}
+	}
+	return date
+}
+
+func ReadBinaryTime(Name string, Time int64) (date Departure) {
+	file, err := os.Open("test2.bin")
+	defer file.Close()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	return m
+	m := Departure2{}
+	//var nameValute []byte
+
+	for i := 0; i < int(count); i++ {
+		data := readNextBytes(file, 19)
+		buffer := bytes.NewBuffer(data)
+		err = binary.Read(buffer, binary.BigEndian, &m)
+		if err != nil {
+			log.Fatal("binary.Read failed", err)
+		}
+		//fmt.Println(string(m.Name[:]))
+		if (string(m.Name[:]) == Name) && ((Time >= m.Time) && (Time < m.Time+10)) {
+			date = Departure{Sell: m.Sell, Time: m.Time}
+			break
+		}
+	}
+	return date
 }
 
 func readNextBytes(file *os.File, number int) []byte {
