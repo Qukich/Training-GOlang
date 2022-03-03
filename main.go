@@ -1,64 +1,39 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
+	"awesomeProject2/adapter"
+	"awesomeProject2/route"
 	"encoding/json"
 	"github.com/gofiber/fiber/v2"
-	"io/ioutil"
 	"log"
-	"math"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
 )
 
-type Response struct {
-	Payload Payload `json:"payload"`
+type BinHeader struct {
+	Version [50]byte
+	Year uint
 }
 
-type Payload struct {
-	Rates Rates `json:"rates"`
-}
-
-type Rates []struct {
-	Category     string   `json:"category"`
-	FromCurrency Currency `json:"fromCurrency"`
-	ToCurrency   Currency `json:"toCurrency"`
-	Sell         float64  `json:"sell"`
-}
-
-type Currency struct {
-	Name string `json:"name"`
-}
-
-type Departure struct {
-	Sell float64 `json:"sell"`
-	Time int64   `json:"time"`
-}
-
-type Departure2 struct {
-	Name [3]byte `json:"name"`
-	Sell float64 `json:"sell"`
-	Time int64   `json:"time"`
-}
-
-var result Response
-var epochNow int64
-var arr [3]byte
-var count uint16 = 0
+//var epochNow int64
+//var count uint16 = 0
 
 func main() {
 
-	app := fiber.New()
-	res, err := http.Get("https://api.tinkoff.ru/v1/currency_rates")
-	if err != nil {
-		log.Fatal(err)
+	tinkoffAdapter := AdapterFactory("tinkoff")
+	if tinkoffAdapter == nil {
+		log.Printf("Adapter not found")
 	}
-	go backgroundTask(res)
-	time.Sleep(2 * time.Second)
-	app.Get("/api/v1/history/:value/t=*", func(c *fiber.Ctx) error {
+	defer tinkoffAdapter.CloseDB()
+
+	app := fiber.New()
+
+	go backgroundTask()
+
+	//time.Sleep(2 * time.Second)
+
+	app.Get("/api/v1/history/:value/:bank/t=*", func(c *fiber.Ctx) error {
 		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
 		mass2 := ReadBinaryTime(c.Params("value"), timeStamp)
 		jsonMass2, err := json.Marshal(mass2)
@@ -68,17 +43,33 @@ func main() {
 		return c.Send(jsonMass2)
 	})
 
-	app.Get("/api/v1/rate/:value", func(c *fiber.Ctx) error {
-		mass1 := ReadBinary(c.Params("value"))
-		jsonMass, err := json.Marshal(mass1)
+	app.Get("/api/v1/rate/:value", route.GetRate(tinkoffAdapter))
+
+	//app.Get("/api/v1/rate/:value", func(c *fiber.Ctx) error {
+	//	mass1 := ReadBinary(c.Params("value"))
+	//	jsonMass, err := json.Marshal(mass1)
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//	//string(mass1.Name[:])
+	//	return c.Send(jsonMass)
+	//})
+
+	app.Listen(":3000")
+}
+
+func AdapterFactory(name string) adapter.Adapter {
+	if name == "tinkoff" {
+		fileDB, err := os.Create("test2.bin")
+		//defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
-		//string(mass1.Name[:])
-		return c.Send(jsonMass)
-	})
-
-	app.Listen(":3000")
+		return &adapter.TAdapter{ File: fileDB }
+	} else if name == "sber" {
+		return &adapter.SAdapter{}
+	}
+	return nil
 }
 
 func PrettyPrint(i interface{}) string {
@@ -86,121 +77,25 @@ func PrettyPrint(i interface{}) string {
 	return string(s)
 }
 
-func backgroundTask(res *http.Response) {
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	json.Unmarshal(body, &result)
-	epochNow = time.Now().Unix()
+func backgroundTask(file *os.File) {
 
-	file, err := os.Create("test2.bin")
-	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var binBuf bytes.Buffer
+	//err := tinkoffAdapter.WriteRateToDatabase()
 
-	for _, p := range result.Payload.Rates {
-		if (p.Category == "C2CTransfers") && ((p.FromCurrency.Name == "USD") || (p.FromCurrency.Name == "EUR")) && (p.ToCurrency.Name == "RUB") {
-			copy(arr[:], p.FromCurrency.Name)
-			binary.Write(&binBuf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
-			writeNextBytes(file, binBuf.Bytes())
-			//fmt.Println(binBuf)
-			binBuf.Reset()
-			count++
-		}
-	}
+	//err := TinkoffGetRate(file)
+	//if err != nil {
+	//	log.Print(err)
+	//	return
+	//}
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
-		body, err := ioutil.ReadAll(res.Body)
+		err = TinkoffGetRate(file)
 		if err != nil {
-			log.Fatal(err)
-		}
-		json.Unmarshal(body, &result)
-		epochNow = time.Now().Unix()
-
-		for _, p := range result.Payload.Rates {
-			if (p.Category == "C2CTransfers") && ((p.FromCurrency.Name == "USD") || (p.FromCurrency.Name == "EUR")) && (p.ToCurrency.Name == "RUB") {
-				copy(arr[:], p.FromCurrency.Name)
-				binary.Write(&binBuf, binary.BigEndian, Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow})
-				writeNextBytes(file, binBuf.Bytes())
-				//fmt.Println(binBuf)
-				binBuf.Reset()
-				count++
-			}
+			log.Print(err)
 		}
 	}
 }
 
-func writeNextBytes(file *os.File, bytes []byte) {
-	_, err := file.Write(bytes)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
-func ReadBinary(Name string) (date Departure) {
-	file, err := os.Open("test2.bin")
-	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	m := Departure2{}
-	//var nameValute []byte
-
-	for i := count; i > 0; i-- {
-		data := readNextBytes(file, 19)
-		buffer := bytes.NewBuffer(data)
-		err = binary.Read(buffer, binary.BigEndian, &m)
-		if err != nil {
-			log.Fatal("binary.Read failed", err)
-		}
-		//fmt.Println(string(m.Name[:]))
-		if (string(m.Name[:]) == Name) && (m.Time == epochNow) {
-			date = Departure{Sell: m.Sell, Time: m.Time}
-			break
-		}
-	}
-	return date
-}
-
-func ReadBinaryTime(Name string, Time int64) (date Departure) {
-	file, err := os.Open("test2.bin")
-	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	m := Departure2{}
-	//var nameValute []byte
-
-	for i := 0; i < int(count); i++ {
-		data := readNextBytes(file, 19)
-		buffer := bytes.NewBuffer(data)
-		err = binary.Read(buffer, binary.BigEndian, &m)
-		if err != nil {
-			log.Fatal("binary.Read failed", err)
-		}
-		//fmt.Println(string(m.Name[:]))
-		if (string(m.Name[:]) == Name) && ((Time >= m.Time) && (Time < m.Time+10)) {
-			date = Departure{Sell: m.Sell, Time: m.Time}
-			break
-		}
-	}
-	return date
-}
-
-func readNextBytes(file *os.File, number int) []byte {
-	bytes := make([]byte, number)
-
-	_, err := file.Read(bytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return bytes
-}
