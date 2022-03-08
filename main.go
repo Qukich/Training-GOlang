@@ -2,18 +2,17 @@ package main
 
 import (
 	"awesomeProject2/adapter"
-	"awesomeProject2/route"
 	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
 	"strconv"
-	"time"
 )
 
 type BinHeader struct {
 	Version [50]byte
-	Year uint
+	Year    uint
 }
 
 //var epochNow int64
@@ -25,17 +24,14 @@ func main() {
 	if tinkoffAdapter == nil {
 		log.Printf("Adapter not found")
 	}
-	defer tinkoffAdapter.CloseDB()
+	//defer tinkoffAdapter.CloseDB()
 
 	app := fiber.New()
 
-	go backgroundTask()
-
-	//time.Sleep(2 * time.Second)
-
 	app.Get("/api/v1/history/:value/:bank/t=*", func(c *fiber.Ctx) error {
 		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
-		mass2 := ReadBinaryTime(c.Params("value"), timeStamp)
+		mass2 := adapter.ReadBinary("USD")
+		fmt.Println(timeStamp)
 		jsonMass2, err := json.Marshal(mass2)
 		if err != nil {
 			log.Fatal(err)
@@ -43,17 +39,7 @@ func main() {
 		return c.Send(jsonMass2)
 	})
 
-	app.Get("/api/v1/rate/:value", route.GetRate(tinkoffAdapter))
-
-	//app.Get("/api/v1/rate/:value", func(c *fiber.Ctx) error {
-	//	mass1 := ReadBinary(c.Params("value"))
-	//	jsonMass, err := json.Marshal(mass1)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//	//string(mass1.Name[:])
-	//	return c.Send(jsonMass)
-	//})
+	//app.Get("/api/v1/rate/:value", route.GetRate(tinkoffAdapter))
 
 	app.Listen(":3000")
 }
@@ -65,7 +51,7 @@ func AdapterFactory(name string) adapter.Adapter {
 		if err != nil {
 			log.Fatal(err)
 		}
-		return &adapter.TAdapter{ File: fileDB }
+		return &adapter.TAdapter{File: fileDB}
 	} else if name == "sber" {
 		return &adapter.SAdapter{}
 	}
@@ -87,15 +73,11 @@ func backgroundTask(file *os.File) {
 	//	return
 	//}
 
-	ticker := time.NewTicker(5 * time.Second)
+	/*ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
-		err = TinkoffGetRate(file)
+		err = route.GetRate(file)
 		if err != nil {
 			log.Print(err)
 		}
-	}
+	}*/
 }
-
-
-
-
