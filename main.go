@@ -15,9 +15,6 @@ type BinHeader struct {
 	Year    uint
 }
 
-//var epochNow int64
-//var count uint16 = 0
-
 func main() {
 
 	tinkoffAdapter := AdapterFactory("tinkoff")
