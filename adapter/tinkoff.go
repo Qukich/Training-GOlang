@@ -70,7 +70,8 @@ func (a *TAdapter) WriteRateToDatabase() error {
 	var binBuf bytes.Buffer
 
 	for _, p := range result.Payload.Rates {
-		if (p.Category == "C2CTransfers") && (len(p.FromCurrency.Name) == 3) && (p.ToCurrency.Name == "RUB") {
+		//&& (len(p.FromCurrency.Name) == 3)
+		if (p.Category == "C2CTransfers") && (p.ToCurrency.Name == "RUB") {
 			var arr [3]byte
 			copy(arr[:], p.FromCurrency.Name)
 			d := Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow}
@@ -85,58 +86,6 @@ func (a *TAdapter) WriteRateToDatabase() error {
 	return nil
 }
 
-func ReadBinary(Name string) (LastPart Departure) {
-	file, err := os.Open("test2.bin")
-	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	NumberByte := 19
-	m := Departure2{}
-	var arr [3]byte
-
-	for i := 1; i <= 10; i++ {
-		data := utils.ReadLastBytes(file, int64(NumberByte), int64(i))
-		buffer := bytes.NewBuffer(data)
-		err = binary.Read(buffer, binary.BigEndian, &m)
-		copy(arr[:], Name)
-		if arr == m.Name {
-			break
-		}
-	}
-	LastPart = Departure{Sell: m.Sell, Time: m.Time}
-
-	if err != nil {
-		log.Fatal("binary.Read failed", err)
-	}
-
-	return LastPart
-}
-
-func ReadBinaryTime(Name string, Time int64) Departure {
-	file, err := os.Open("test2.bin")
-	defer file.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
-	NumberByte := 19
-	//
-	m := Departure2{}
-	//var nameValute []byte
-
-	//for i := 0; i < int(count); i++ {
-	data := utils.ReadNextBytes(file, NumberByte)
-	buffer := bytes.NewBuffer(data)
-	err = binary.Read(buffer, binary.BigEndian, &m)
-	if err != nil {
-		log.Fatal("binary.Read failed", err)
-	}
-	//fmt.Println(string(m.Name[:]))
-	if (string(m.Name[:]) == Name) && ((Time >= m.Time) && (Time < m.Time+10)) {
-		return Departure{Sell: m.Sell, Time: m.Time}
-		//break
-	}
-	//}
-	return Departure{}
-	//return date
+func (a *TAdapter) CloseDB() error {
+	return nil
 }

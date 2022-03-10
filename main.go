@@ -2,12 +2,14 @@ package main
 
 import (
 	"awesomeProject2/adapter"
+	"awesomeProject2/route"
 	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 type BinHeader struct {
@@ -21,7 +23,8 @@ func main() {
 	if tinkoffAdapter == nil {
 		log.Printf("Adapter not found")
 	}
-	//defer tinkoffAdapter.CloseDB()
+	defer tinkoffAdapter.CloseDB()
+	go backgroundTask()
 
 	app := fiber.New()
 
@@ -36,21 +39,26 @@ func main() {
 		return c.Send(jsonMass2)
 	})
 
-	//app.Get("/api/v1/rate/:value", route.GetRate(tinkoffAdapter))
+	app.Get("/api/v1/rate/:value", route.GetRate())
 
 	app.Listen(":3000")
 }
 
 func AdapterFactory(name string) adapter.Adapter {
 	if name == "tinkoff" {
-		fileDB, err := os.Create("test2.bin")
-		//defer fileDB.Close()
+		fileDB, err := os.Create("tinkoff_03_2022.bin")
+		defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
 		return &adapter.TAdapter{File: fileDB}
 	} else if name == "sber" {
-		return &adapter.SAdapter{}
+		fileDB, err := os.Create("sber_03_2022.bin")
+		defer fileDB.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		return &adapter.SAdapter{File: fileDB}
 	}
 	return nil
 }
@@ -60,21 +68,24 @@ func PrettyPrint(i interface{}) string {
 	return string(s)
 }
 
-func backgroundTask(file *os.File) {
-
-	//err := tinkoffAdapter.WriteRateToDatabase()
-
-	//err := TinkoffGetRate(file)
-	//if err != nil {
-	//	log.Print(err)
-	//	return
-	//}
-
-	/*ticker := time.NewTicker(5 * time.Second)
+func backgroundTask() {
+	tinkoffAdapter := AdapterFactory("tinkoff")
+	if tinkoffAdapter == nil {
+		log.Printf("Adapter not found")
+	}
+	sberAdapter := AdapterFactory("sber")
+	if tinkoffAdapter == nil {
+		log.Printf("Adapter not found")
+	}
+	ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
-		err = route.GetRate(file)
+		err := tinkoffAdapter.WriteRateToDatabase()
 		if err != nil {
 			log.Print(err)
 		}
-	}*/
+		err2 := sberAdapter.WriteRateToDatabase()
+		if err2 != nil {
+			log.Print(err2)
+		}
+	}
 }
