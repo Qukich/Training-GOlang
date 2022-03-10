@@ -4,6 +4,7 @@ import (
 	"awesomeProject2/adapter"
 	"awesomeProject2/route"
 	"encoding/json"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
@@ -44,15 +45,18 @@ func main() {
 }
 
 func AdapterFactory(name string) adapter.Adapter {
+	currentTime := time.Now()
 	if name == "tinkoff" {
-		fileDB, err := os.Create("tinkoff_03_2022.bin")
+		fileName := fmt.Sprintf("tinkoff_%d_%d", currentTime.Year(), currentTime.Month())
+		fileDB, err := os.Create(fileName)
 		defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
 		return &adapter.TAdapter{File: fileDB}
 	} else if name == "sber" {
-		fileDB, err := os.Create("sber_03_2022.bin")
+		fileName := fmt.Sprintf("sber_%d_%d", currentTime.Year(), currentTime.Month())
+		fileDB, err := os.Create(fileName)
 		defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
