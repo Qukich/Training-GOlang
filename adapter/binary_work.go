@@ -8,13 +8,12 @@ import (
 	"os"
 )
 
-func ReadBinary(Name string) (LastPart Departure) {
+func ReadBinary(Name string, NumberByte int) (LastPart Departure) {
 	file, err := os.Open("test2.bin")
 	defer file.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	NumberByte := 19
 	m := Departure2{}
 	var arr [3]byte
 
