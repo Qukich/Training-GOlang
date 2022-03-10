@@ -4,11 +4,9 @@ import (
 	"awesomeProject2/adapter"
 	"awesomeProject2/route"
 	"encoding/json"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -28,7 +26,7 @@ func main() {
 
 	app := fiber.New()
 
-	app.Get("/api/v1/history/:value/:bank/t=*", func(c *fiber.Ctx) error {
+	/*app.Get("/api/v1/history/:value/:bank/t=*", func(c *fiber.Ctx) error {
 		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
 		mass2 := adapter.ReadBinary("USD", 8)
 		fmt.Println(timeStamp)
@@ -37,9 +35,10 @@ func main() {
 			log.Fatal(err)
 		}
 		return c.Send(jsonMass2)
-	})
+	})*/
 
 	app.Get("/api/v1/rate/:value", route.GetRate())
+	app.Get("/api/v1/history/:value/:bank/t=*", route.GetHistory())
 
 	app.Listen(":3000")
 }
