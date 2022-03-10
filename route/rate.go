@@ -9,7 +9,7 @@ import (
 
 func GetRate() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		mass1 := adapter.ReadBinary(c.Params("value"))
+		mass1 := adapter.ReadBinary(c.Params("value"), 19)
 		jsonMass, err := json.Marshal(mass1)
 		if err != nil {
 			log.Fatal(err)

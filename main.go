@@ -30,7 +30,7 @@ func main() {
 
 	app.Get("/api/v1/history/:value/:bank/t=*", func(c *fiber.Ctx) error {
 		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
-		mass2 := adapter.ReadBinary("USD")
+		mass2 := adapter.ReadBinary("USD", 8)
 		fmt.Println(timeStamp)
 		jsonMass2, err := json.Marshal(mass2)
 		if err != nil {
