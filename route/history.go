@@ -3,17 +3,13 @@ package route
 import (
 	"awesomeProject2/adapter"
 	"encoding/json"
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
-	"strconv"
 )
 
 func GetHistory() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		timeStamp, _ := strconv.ParseInt(c.Params("*"), 0, 64)
-		mass2 := adapter.ReadBinary("USD", 2)
-		fmt.Println(timeStamp)
+		mass2 := adapter.ReadBinaryTime(c.Params("value"), c.Params("*"), c.Params("bank"), 19)
 		jsonMass2, err := json.Marshal(mass2)
 		if err != nil {
 			log.Fatal(err)
