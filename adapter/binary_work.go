@@ -9,7 +9,7 @@ import (
 )
 
 func ReadBinary(Name string, NumberByte int) (LastPart Departure) {
-	file, err := os.Open("test2.bin")
+	file, err := os.Open("sber_3_2022.bin")
 	defer file.Close()
 	if err != nil {
 		log.Fatal(err)

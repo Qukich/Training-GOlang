@@ -47,17 +47,15 @@ func main() {
 func AdapterFactory(name string) adapter.Adapter {
 	currentTime := time.Now()
 	if name == "tinkoff" {
-		fileName := fmt.Sprintf("tinkoff_%d_%d", currentTime.Year(), currentTime.Month())
+		fileName := fmt.Sprintf("tinkoff_%d_%d", currentTime.Month(), currentTime.Year())
 		fileDB, err := os.Create(fileName)
-		defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
 		return &adapter.TAdapter{File: fileDB}
 	} else if name == "sber" {
-		fileName := fmt.Sprintf("sber_%d_%d", currentTime.Year(), currentTime.Month())
+		fileName := fmt.Sprintf("sber_%d_%d", currentTime.Month(), currentTime.Year())
 		fileDB, err := os.Create(fileName)
-		defer fileDB.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -77,7 +75,7 @@ func backgroundTask() {
 		log.Printf("Adapter not found")
 	}
 	sberAdapter := AdapterFactory("sber")
-	if tinkoffAdapter == nil {
+	if sberAdapter == nil {
 		log.Printf("Adapter not found")
 	}
 	ticker := time.NewTicker(5 * time.Second)
