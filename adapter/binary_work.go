@@ -8,10 +8,12 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 )
 
 func ReadBinary(Name string, NumberByte int, NameBank string) (LastPart Departure) {
-	FileName := fmt.Sprintf("%s_3_2022.bin", NameBank)
+	currentTime := time.Now()
+	FileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", NameBank, currentTime.Month(), currentTime.Year())
 	file, err := os.Open(FileName)
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +41,8 @@ func ReadBinary(Name string, NumberByte int, NameBank string) (LastPart Departur
 }
 
 func ReadBinaryTime(Name string, Time string, NameBank string, NumberByte int) Departure {
-	FileName := fmt.Sprintf("%s_3_2022.bin", NameBank)
+	currentTime := time.Now()
+	FileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", NameBank, currentTime.Month(), currentTime.Year())
 	file, err := os.Open(FileName)
 	defer file.Close()
 	if err != nil {

@@ -17,23 +17,16 @@ type BinHeader struct {
 }
 
 func main() {
-
-	tinkoffAdapter := AdapterFactory("tinkoff")
-	if tinkoffAdapter == nil {
-		log.Printf("Adapter not found")
-	}
-	defer tinkoffAdapter.CloseDB()
+	app := fiber.New()
 	go backgroundTask()
 
-	app := fiber.New()
-
-	app.Get("/api/v1/rate/:value", route.GetRate())
+	app.Get("/api/v1/rate/:value/:bank", route.GetRate())
 	app.Get("/api/v1/history/:value/:bank/t=*", route.GetHistory())
 
 	app.Listen(":3000")
 }
 
-func FileExists(path string) bool {
+func Check_file(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true
@@ -46,24 +39,40 @@ func FileExists(path string) bool {
 
 func AdapterFactory(name string) adapter.Adapter {
 	currentTime := time.Now()
-	fileName := fmt.Sprintf("%s_%d_%d", name, currentTime.Year(), currentTime.Month())
-	currentFilePath := fmt.Sprintf("C:/Users/м/GolandProjects/Training-GOlang/%s_%d_%d", name, currentTime.Year(), currentTime.Month())
-
-	if FileExists(currentFilePath) == false {
-		fileDB, err := os.Create(fileName)
-		defer fileDB.Close()
-		if err != nil {
-			log.Fatal(err)
+	if name == "tinkoff" {
+		fileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", name, currentTime.Month(), currentTime.Year())
+		currentFilePath := fmt.Sprintf("C:/Users/Roman/GolandProjects/awesomeProject2/%s", fileName)
+		if Check_file(currentFilePath) == false {
+			fileDB, err := os.Create(fileName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return &adapter.TAdapter{File: fileDB}
+		} else {
+			fileDB, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return &adapter.TAdapter{File: fileDB}
 		}
-		return &adapter.TAdapter{File: fileDB}
-	} else {
-		fileDB, err := os.Open(fileName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		return &adapter.TAdapter{File: fileDB}
 	}
-
+	if name == "sber" {
+		fileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", name, currentTime.Month(), currentTime.Year())
+		currentFilePath := fmt.Sprintf("C:/Users/Roman/GolandProjects/awesomeProject2/%s", fileName)
+		if Check_file(currentFilePath) == false {
+			fileDB, err := os.Create(fileName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return &adapter.SAdapter{File: fileDB}
+		} else {
+			fileDB, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+			if err != nil {
+				log.Fatal(err)
+			}
+			return &adapter.SAdapter{File: fileDB}
+		}
+	}
 	return nil
 }
 
