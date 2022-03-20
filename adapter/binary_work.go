@@ -21,15 +21,14 @@ func ReadBinary(Name string, NumberByte int, NameBank string) (LastPart Departur
 	defer file.Close()
 	m := Departure2{}
 	var arr [3]byte
+	copy(arr[:], Name)
 
-	for i := 1; i <= 3; i++ {
+	for m.Name != arr {
+		i := 1
 		data := utils.ReadLastBytes(file, int64(NumberByte), int64(i))
 		buffer := bytes.NewBuffer(data)
 		err = binary.Read(buffer, binary.BigEndian, &m)
-		copy(arr[:], Name)
-		if arr == m.Name {
-			break
-		}
+		i++
 	}
 	LastPart = Departure{Sell: m.Sell, Time: m.Time}
 
@@ -59,12 +58,22 @@ func ReadBinaryTime(Name string, Time string, NameBank string, NumberByte int) D
 		panic(err)
 	}
 
+	/*for (string(m.Name[:]) != Name) && ((time <= m.Time) && (time >= m.Time+5)) {
+		data := utils.ReadNextBytes(file, NumberByte)
+		buffer := bytes.NewBuffer(data)
+		err = binary.Read(buffer, binary.BigEndian, &m)
+		if err != nil {
+			log.Fatal("binary.ReadTime failed", err)
+		}
+		return Departure{Sell: m.Sell, Time: m.Time}
+	}*/
+
 	for i := 0; i < int(size); i++ {
 		data := utils.ReadNextBytes(file, NumberByte)
 		buffer := bytes.NewBuffer(data)
 		err = binary.Read(buffer, binary.BigEndian, &m)
 		if err != nil {
-			log.Fatal("binary.Read failed", err)
+			log.Fatal("binary.ReadTime failed", err)
 		}
 		if (string(m.Name[:]) == Name) && ((time >= m.Time) && (time <= m.Time+5)) {
 			return Departure{Sell: m.Sell, Time: m.Time}

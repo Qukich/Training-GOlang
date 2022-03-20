@@ -5,10 +5,13 @@ import (
 	"os"
 )
 
-func WriteNextBytes(file *os.File, bytes []byte) {
-	_, err := file.Write(bytes)
-
+func WriteNextBytes(file string, bytes []byte) {
+	f, err := os.OpenFile(file, os.O_APPEND, 0644)
 	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	if _, err = f.Write(bytes); err != nil {
 		log.Fatal(err)
 	}
 }

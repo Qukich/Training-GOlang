@@ -3,18 +3,12 @@ package main
 import (
 	"awesomeProject2/adapter"
 	"awesomeProject2/route"
-	"encoding/json"
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"log"
 	"os"
 	"time"
 )
-
-type BinHeader struct {
-	Version [50]byte
-	Year    uint
-}
 
 func main() {
 	app := fiber.New()
@@ -49,7 +43,8 @@ func AdapterFactory(name string) adapter.Adapter {
 			}
 			return &adapter.TAdapter{File: fileDB}
 		} else {
-			fileDB, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+			fileDB, err := os.OpenFile(fileName, os.O_CREATE, 0660)
+			//fileDB, err := os.Open(fileName)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -66,7 +61,8 @@ func AdapterFactory(name string) adapter.Adapter {
 			}
 			return &adapter.SAdapter{File: fileDB}
 		} else {
-			fileDB, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+			fileDB, err := os.OpenFile(fileName, os.O_CREATE, 0660)
+			//fileDB, err := os.Open(fileName)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -74,11 +70,6 @@ func AdapterFactory(name string) adapter.Adapter {
 		}
 	}
 	return nil
-}
-
-func PrettyPrint(i interface{}) string {
-	s, _ := json.MarshalIndent(i, "", "\t")
-	return string(s)
 }
 
 func backgroundTask() {
@@ -90,7 +81,7 @@ func backgroundTask() {
 	if tinkoffAdapter == nil {
 		log.Printf("Adapter not found")
 	}
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(50 * time.Second)
 	for range ticker.C {
 		err := tinkoffAdapter.WriteRateToDatabase()
 		if err != nil {
