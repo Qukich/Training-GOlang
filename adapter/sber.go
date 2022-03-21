@@ -59,10 +59,10 @@ func (a *SAdapter) WriteRateToDatabase() error {
 	var arr [3]byte
 
 	copy(arr[:], "USD")
-	d := DepartureSber{Name: arr, Sell: math.Round(result.Valute.USD.Value*10) / 10, Time: epochNow}
-	binary.Write(&binBuf, binary.BigEndian, d)
+	tempDeparture := DepartureSber{Name: arr, Sell: math.Round(result.Valute.USD.Value*10) / 10, Time: epochNow}
+	binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 	utils.WriteNextBytes(file.Name(), binBuf.Bytes())
-	log.Printf("New rate time %d: sell: %f\n", d.Time, d.Sell)
+	log.Printf("New rate time %d: sell: %f\n", tempDeparture.Time, tempDeparture.Sell)
 	binBuf.Reset()
 
 	return nil

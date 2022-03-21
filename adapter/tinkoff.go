@@ -74,11 +74,11 @@ func (a *TAdapter) WriteRateToDatabase() error {
 		if (p.Category == "C2CTransfers") && (p.ToCurrency.Name == "RUB") {
 			var arr [3]byte
 			copy(arr[:], p.FromCurrency.Name)
-			d := Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow}
-			binary.Write(&binBuf, binary.BigEndian, d)
+			tempDeparture := Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow}
+			binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 			utils.WriteNextBytes(file.Name(), binBuf.Bytes())
 
-			log.Printf("New rate time %d: sell: %f\n", d.Time, d.Sell)
+			log.Printf("New rate time %d: sell: %f\n", tempDeparture.Time, tempDeparture.Sell)
 			binBuf.Reset()
 		}
 	}

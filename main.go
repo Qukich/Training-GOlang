@@ -35,7 +35,7 @@ func AdapterFactory(name string) adapter.Adapter {
 	currentTime := time.Now()
 	if name == "tinkoff" {
 		fileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", name, currentTime.Month(), currentTime.Year())
-		currentFilePath := fmt.Sprintf("C:/Users/Roman/GolandProjects/awesomeProject2/%s", fileName)
+		currentFilePath := fmt.Sprintf("C:/Users/м/GolandProjects/Training-GOlang/%s", fileName)
 		if Check_file(currentFilePath) == false {
 			fileDB, err := os.Create(fileName)
 			if err != nil {
@@ -53,7 +53,7 @@ func AdapterFactory(name string) adapter.Adapter {
 	}
 	if name == "sber" {
 		fileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", name, currentTime.Month(), currentTime.Year())
-		currentFilePath := fmt.Sprintf("C:/Users/Roman/GolandProjects/awesomeProject2/%s", fileName)
+		currentFilePath := fmt.Sprintf("C:/Users/м/GolandProjects/Training-GOlang/%s", fileName)
 		if Check_file(currentFilePath) == false {
 			fileDB, err := os.Create(fileName)
 			if err != nil {
@@ -81,7 +81,7 @@ func backgroundTask() {
 	if tinkoffAdapter == nil {
 		log.Printf("Adapter not found")
 	}
-	ticker := time.NewTicker(50 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
 		err := tinkoffAdapter.WriteRateToDatabase()
 		if err != nil {
