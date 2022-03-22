@@ -1,6 +1,8 @@
 package adapter
 
 type Adapter interface {
-	WriteRateToDatabase() error
-	CloseDB() error
+	WriteRateToFile() error
+	CloseFile() error
+	GetCode() string
+	GetRateFromFile(ticker string) (*Departure, error)
 }

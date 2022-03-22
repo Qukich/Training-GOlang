@@ -35,7 +35,11 @@ type DepartureSber struct {
 	Time int64   `json:"time"`
 }
 
-func (a *SAdapter) WriteRateToDatabase() error {
+func (a *SAdapter) GetCode() string {
+	return "sber"
+}
+
+func (a *SAdapter) WriteRateToFile() error {
 	file := a.File
 
 	res, err := http.Get("https://www.cbr-xml-daily.ru/daily_json.js")
@@ -62,12 +66,16 @@ func (a *SAdapter) WriteRateToDatabase() error {
 	tempDeparture := DepartureSber{Name: arr, Sell: math.Round(result.Valute.USD.Value*10) / 10, Time: epochNow}
 	binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 	utils.WriteNextBytes(file.Name(), binBuf.Bytes())
-	log.Printf("New rate time %d: sell: %f\n", tempDeparture.Time, tempDeparture.Sell)
+	log.Printf("New rate [sber] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
 	binBuf.Reset()
 
 	return nil
 }
 
-func (a *SAdapter) CloseDB() error {
+func (a *SAdapter) CloseFile() error {
 	return nil
+}
+
+func (a *SAdapter) GetRateFromFile(ticker string) (*Departure, error) {
+	return GetRate(ticker, a.File)
 }

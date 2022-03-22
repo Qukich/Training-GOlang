@@ -4,44 +4,42 @@ import (
 	"awesomeProject2/utils"
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
+	"unsafe"
 )
 
-func ReadBinary(Name string, NumberByte int, NameBank string) (LastPart Departure) {
-	currentTime := time.Now()
-	FileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", NameBank, currentTime.Month(), currentTime.Year())
-	file, err := os.Open(FileName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-	m := Departure2{}
+func GetRate(ticker string, file *os.File) (*Departure, error) {
+
+	//var m Departure2
+	//m := Departure2{}
+
 	var arr [3]byte
-	copy(arr[:], Name)
+	copy(arr[:], ticker)
 
-	for m.Name != arr {
-		i := 1
-		data := utils.ReadLastBytes(file, int64(NumberByte), int64(i))
+	for i := 1; i < 20; i++ {
+		m := Departure2{}
+		data := utils.ReadLastBytes(file, /*int64(unsafe.Sizeof(m))*/19, int64(i))
 		buffer := bytes.NewBuffer(data)
-		err = binary.Read(buffer, binary.BigEndian, &m)
-		i++
-	}
-	LastPart = Departure{Sell: m.Sell, Time: m.Time}
+		_ = binary.Read(buffer, binary.BigEndian, &m)
 
-	if err != nil {
-		log.Fatal("binary.Read failed", err)
+		log.Printf("%s,%f,%d\n\n\n", m.Name, m.Sell, m.Time)
+
+		if m.Name == arr {
+			return &Departure{Sell: m.Sell, Time: m.Time}, nil
+		}
 	}
 
-	return LastPart
+	return nil, errors.New("ticker not found")
 }
 
-func ReadBinaryTime(Name string, Time string, NameBank string, NumberByte int) Departure {
+func GetRateByTimestamp(ticker string, Time string, NameBank string, NumberByte int) Departure {
 	currentTime := time.Now()
-	FileName := fmt.Sprintf("Binary-course/%s_%d_%d.bin", NameBank, currentTime.Month(), currentTime.Year())
+	FileName := fmt.Sprintf("./Binary-course/%s_%d_%d.bin", NameBank, currentTime.Month(), currentTime.Year())
 	file, err := os.Open(FileName)
 	defer file.Close()
 	if err != nil {
@@ -53,7 +51,7 @@ func ReadBinaryTime(Name string, Time string, NameBank string, NumberByte int) D
 		log.Fatal(err)
 	}
 	size := stat.Size()
-	time, err := strconv.ParseInt(Time, 10, 64)
+	timestamp, err := strconv.ParseInt(Time, 10, 64)
 	if err != nil {
 		panic(err)
 	}
@@ -69,15 +67,14 @@ func ReadBinaryTime(Name string, Time string, NameBank string, NumberByte int) D
 	}*/
 
 	for i := 0; i < int(size); i++ {
-		data := utils.ReadNextBytes(file, NumberByte)
+		data := utils.ReadNextBytes(file, int64(unsafe.Sizeof(m)))
 		buffer := bytes.NewBuffer(data)
 		err = binary.Read(buffer, binary.BigEndian, &m)
 		if err != nil {
 			log.Fatal("binary.ReadTime failed", err)
 		}
-		if (string(m.Name[:]) == Name) && ((time >= m.Time) && (time <= m.Time+5)) {
+		if (string(m.Name[:]) == ticker) && ((timestamp >= m.Time) && (timestamp <= m.Time+5)) {
 			return Departure{Sell: m.Sell, Time: m.Time}
-			break
 		}
 	}
 	return Departure{}

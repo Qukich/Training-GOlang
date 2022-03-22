@@ -47,7 +47,11 @@ type TAdapter struct {
 	File *os.File
 }
 
-func (a *TAdapter) WriteRateToDatabase() error {
+func (a *TAdapter) GetCode() string {
+	return "tinkoff"
+}
+
+func (a *TAdapter) WriteRateToFile() error {
 	file := a.File
 
 	res, err := http.Get("https://api.tinkoff.ru/v1/currency_rates")
@@ -78,7 +82,7 @@ func (a *TAdapter) WriteRateToDatabase() error {
 			binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 			utils.WriteNextBytes(file.Name(), binBuf.Bytes())
 
-			log.Printf("New rate time %d: sell: %f\n", tempDeparture.Time, tempDeparture.Sell)
+			log.Printf("New rate [tinkoff] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
 			binBuf.Reset()
 		}
 	}
@@ -86,6 +90,10 @@ func (a *TAdapter) WriteRateToDatabase() error {
 	return nil
 }
 
-func (a *TAdapter) CloseDB() error {
+func (a *TAdapter) CloseFile() error {
 	return nil
+}
+
+func (a *TAdapter) GetRateFromFile(ticker string) (*Departure, error) {
+	return GetRate(ticker, a.File)
 }
