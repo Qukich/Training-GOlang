@@ -58,7 +58,7 @@ func AdapterFactory(name string) adapter.Adapter {
 }
 
 func backgroundTask(adapters []adapter.Adapter) {
-	ticker := time.NewTicker(50000000 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for range ticker.C {
 		for _, a := range adapters {
 			err := a.WriteRateToFile()
