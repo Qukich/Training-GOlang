@@ -16,8 +16,8 @@ func WriteNextBytes(file string, bytes []byte) {
 	}
 }
 
-func ReadNextBytes(file *os.File, number int64) []byte {
-	bytes := make([]byte, number)
+func ReadNextBytes(file *os.File, numberByte int64) []byte {
+	bytes := make([]byte, numberByte)
 
 	_, err := file.Read(bytes)
 	if err != nil {
@@ -27,13 +27,13 @@ func ReadNextBytes(file *os.File, number int64) []byte {
 	return bytes
 }
 
-func ReadLastBytes(file *os.File, number int64, i int64) []byte {
-	bytes := make([]byte, number)
+func ReadLastBytes(file *os.File, numberByte int64, i int64) []byte {
+	bytes := make([]byte, numberByte)
 	stat, err := os.Stat(file.Name())
 	if err != nil {
 		log.Fatal(err)
 	}
-	start := stat.Size() - number*i
+	start := stat.Size() - numberByte*i
 	_, err = file.ReadAt(bytes, start)
 	//log.Printf("Last: %s\n", bytes)
 	return bytes

@@ -97,3 +97,7 @@ func (a *TAdapter) CloseFile() error {
 func (a *TAdapter) GetRateFromFile(ticker string) (*Departure, error) {
 	return GetRate(ticker, a.File)
 }
+
+func (a *TAdapter) GetRateByTimestampFromFile(ticker string, timestamp int64) (*Departure, error) {
+	return GetRateByTimestamp(ticker, a.File, timestamp)
+}

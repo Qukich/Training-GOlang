@@ -27,7 +27,7 @@ func main() {
 	go backgroundTask(adapters)
 
 	app.Get("/api/v1/rate/:value/:bank", route.GetRate(adapters))
-	app.Get("/api/v1/history/:value/:bank", route.GetHistory())
+	app.Get("/api/v1/history/:value/:bank", route.GetHistory(adapters))
 
 	log.Fatal(app.Listen(":3000"))
 }
@@ -39,7 +39,7 @@ func getDBFileName(name string) string {
 
 func AdapterFactory(name string) adapter.Adapter {
 	if name == "tinkoff" {
-		fileDB, err := os.OpenFile(getDBFileName(name), os.O_RDWR|os.O_CREATE, 0660)
+		fileDB, err := os.OpenFile(getDBFileName(name), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0660)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -47,7 +47,7 @@ func AdapterFactory(name string) adapter.Adapter {
 		return &adapter.TAdapter{File: fileDB}
 	}
 	if name == "sber" {
-		fileDB, err := os.OpenFile(getDBFileName(name), os.O_RDWR|os.O_CREATE, 0660)
+		fileDB, err := os.OpenFile(getDBFileName(name), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0660)
 		if err != nil {
 			log.Fatal(err)
 		}
