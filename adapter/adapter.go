@@ -1,5 +1,7 @@
 package adapter
 
+type Adapters []Adapter
+
 type Adapter interface {
 	WriteRateToFile() error
 	CloseFile() error

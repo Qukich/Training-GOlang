@@ -11,8 +11,10 @@ import (
 )
 
 func main() {
+	//tickers := []string{"USD","EUR"}
 	banks := []string{"tinkoff", "sber"}
-	var adapters []adapter.Adapter
+
+	var adapters adapter.Adapters
 
 	for _, bank := range banks {
 		a := AdapterFactory(bank)
@@ -25,11 +27,18 @@ func main() {
 	app := fiber.New()
 
 	go backgroundTask(adapters)
+	defer closeDBFiles(adapters)
 
 	app.Get("/api/v1/rate/:value/:bank", route.GetRate(adapters))
 	app.Get("/api/v1/history/:value/:bank", route.GetHistory(adapters))
 
 	log.Fatal(app.Listen(":3000"))
+}
+
+func closeDBFiles(adapters []adapter.Adapter) {
+	for _, a := range adapters {
+		_ = a.CloseFile()
+	}
 }
 
 func getDBFileName(name string) string {

@@ -6,8 +6,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
-	"math"
 	"os"
+	"unsafe"
 )
 
 func GetRate(ticker string, file *os.File) (*Departure, error) {
@@ -15,12 +15,12 @@ func GetRate(ticker string, file *os.File) (*Departure, error) {
 	//var m Departure2
 	//m := Departure2{}
 
-	var arr [3]byte
+	var arr [8]byte
 	copy(arr[:], ticker)
 
 	for i := 1; i < 20; i++ {
 		m := Departure2{}
-		data := utils.ReadLastBytes(file /*int64(unsafe.Sizeof(m))*/, 19, int64(i))
+		data := utils.ReadLastBytes(file, int64(unsafe.Sizeof(m)), int64(i))
 		buffer := bytes.NewBuffer(data)
 		_ = binary.Read(buffer, binary.BigEndian, &m)
 
@@ -35,13 +35,15 @@ func GetRate(ticker string, file *os.File) (*Departure, error) {
 }
 
 func GetRateByTimestamp(ticker string, file *os.File, timestamp int64) (*Departure, error) {
-	m := Departure2{}
-	lastTimestampFile := utils.ReadLastBytes(file, 19, 1)
-	firstTimestampFile := utils.ReadNextBytes(file, 19)
-	bufferFirst := bytes.NewBuffer(firstTimestampFile)
-	bufferLast := bytes.NewBuffer(lastTimestampFile)
+	//m := Departure2{}
+	return &Departure{}, nil
 
-	firstBorder := math.Abs(timestamp - int64(firstTimestampFile))
+	//lastTimestampFile := utils.ReadLastBytes(file, int64(unsafe.Sizeof(m)), 1)
+	//firstTimestampFile := utils.ReadNextBytes(file, int64(unsafe.Sizeof(m)))
+	//bufferFirst := bytes.NewBuffer(firstTimestampFile)
+	//bufferLast := bytes.NewBuffer(lastTimestampFile)
+	//
+	//firstBorder := math.Abs(timestamp - int64(firstTimestampFile))
 
 	//надо понять, к какому из двух значений ближе, и от него искать
 

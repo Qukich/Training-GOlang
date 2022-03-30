@@ -38,9 +38,9 @@ type Departure struct {
 }
 
 type Departure2 struct {
-	Name [3]byte `json:"name"`
 	Sell float64 `json:"sell"`
 	Time int64   `json:"time"`
+	Name [8]byte `json:"name"`
 }
 
 type TAdapter struct {
@@ -76,7 +76,7 @@ func (a *TAdapter) WriteRateToFile() error {
 	for _, p := range result.Payload.Rates {
 		//&& (len(p.FromCurrency.Name) == 3)
 		if (p.Category == "C2CTransfers") && (p.ToCurrency.Name == "RUB") {
-			var arr [3]byte
+			var arr [8]byte
 			copy(arr[:], p.FromCurrency.Name)
 			tempDeparture := Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow}
 			binary.Write(&binBuf, binary.BigEndian, tempDeparture)

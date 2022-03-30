@@ -13,15 +13,13 @@ import (
 	"time"
 )
 
+var rates map[string]float64
+
 type ResponseSber struct {
-	Valute Valute `json:"valute"`
+	Valute map[string]SberTickerInfo
 }
 
-type Valute struct {
-	USD USD `json:"USD"`
-}
-
-type USD struct {
+type SberTickerInfo struct {
 	Value float64 `json:"value"`
 }
 
@@ -33,6 +31,10 @@ type DepartureSber struct {
 	Name [3]byte `json:"name"`
 	Sell float64 `json:"sell"`
 	Time int64   `json:"time"`
+}
+
+func init() {
+	rates = make(map[string]float64)
 }
 
 func (a *SAdapter) GetCode() string {
@@ -59,15 +61,35 @@ func (a *SAdapter) WriteRateToFile() error {
 	}
 
 	epochNow := time.Now().Unix()
-	var binBuf bytes.Buffer
-	var arr [3]byte
 
-	copy(arr[:], "USD")
-	tempDeparture := DepartureSber{Name: arr, Sell: math.Round(result.Valute.USD.Value*10) / 10, Time: epochNow}
-	binary.Write(&binBuf, binary.BigEndian, tempDeparture)
-	utils.WriteNextBytes(file.Name(), binBuf.Bytes())
-	log.Printf("New rate [sber] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
-	binBuf.Reset()
+	for ticker, obj := range result.Valute {
+		if utils.StringInArray(ticker, []string{"USD", "AMD"}) {
+			var binBuf bytes.Buffer
+			var arr [3]byte
+			copy(arr[:], ticker)
+			sell := math.Round(obj.Value * 10) / 10
+			needWriteToDatabase := true
+
+			if lastSell, ok := rates[ticker]
+			ok {
+				if lastSell == sell {
+					needWriteToDatabase = false
+				}
+			} else {
+				rates[ticker] = sell
+			}
+
+			if needWriteToDatabase {
+				tempDeparture := DepartureSber{Name: arr, Sell: sell, Time: epochNow}
+				binary.Write(&binBuf, binary.BigEndian, tempDeparture)
+				utils.WriteNextBytes(file.Name(), binBuf.Bytes())
+				log.Printf("New rate [sber] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
+				binBuf.Reset()
+			} else {
+				log.Printf("test")
+			}
+		}
+	}
 
 	return nil
 }
