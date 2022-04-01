@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var rates map[string]float64
+var ratesSber map[string]float64
 
 type ResponseSber struct {
 	Valute map[string]SberTickerInfo
@@ -34,7 +34,7 @@ type DepartureSber struct {
 }
 
 func init() {
-	rates = make(map[string]float64)
+	ratesSber = make(map[string]float64)
 }
 
 func (a *SAdapter) GetCode() string {
@@ -67,16 +67,15 @@ func (a *SAdapter) WriteRateToFile() error {
 			var binBuf bytes.Buffer
 			var arr [3]byte
 			copy(arr[:], ticker)
-			sell := math.Round(obj.Value * 10) / 10
+			sell := math.Round(obj.Value*10) / 10
 			needWriteToDatabase := true
 
-			if lastSell, ok := rates[ticker]
-			ok {
+			if lastSell, ok := ratesSber[ticker]; ok {
 				if lastSell == sell {
 					needWriteToDatabase = false
 				}
 			} else {
-				rates[ticker] = sell
+				ratesSber[ticker] = sell
 			}
 
 			if needWriteToDatabase {
@@ -86,7 +85,7 @@ func (a *SAdapter) WriteRateToFile() error {
 				log.Printf("New rate [sber] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
 				binBuf.Reset()
 			} else {
-				log.Printf("test")
+				log.Printf("The course is already in the file Sber")
 			}
 		}
 	}

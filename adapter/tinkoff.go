@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var ratesTinkoff map[string]float64
+
 type Response struct {
 	Payload Payload `json:"payload"`
 }
@@ -37,7 +39,7 @@ type Departure struct {
 	Time int64   `json:"time"`
 }
 
-type Departure2 struct {
+type DepartureTinkoff struct {
 	Sell float64 `json:"sell"`
 	Time int64   `json:"time"`
 	Name [8]byte `json:"name"`
@@ -45,6 +47,10 @@ type Departure2 struct {
 
 type TAdapter struct {
 	File *os.File
+}
+
+func init() {
+	ratesTinkoff = make(map[string]float64)
 }
 
 func (a *TAdapter) GetCode() string {
@@ -71,22 +77,36 @@ func (a *TAdapter) WriteRateToFile() error {
 	}
 
 	epochNow := time.Now().Unix()
-	var binBuf bytes.Buffer
 
-	for _, p := range result.Payload.Rates {
-		//&& (len(p.FromCurrency.Name) == 3)
-		if (p.Category == "C2CTransfers") && (p.ToCurrency.Name == "RUB") {
+	for _, obj := range result.Payload.Rates {
+		if utils.StringInArray(obj.FromCurrency.Name, []string{"USD", "EUR", "GBP"}) && (obj.Category == "C2CTransfers") && (obj.ToCurrency.Name == "RUB") {
+			var binBuf bytes.Buffer
 			var arr [8]byte
-			copy(arr[:], p.FromCurrency.Name)
-			tempDeparture := Departure2{Name: arr, Sell: math.Round(p.Sell*10) / 10, Time: epochNow}
-			binary.Write(&binBuf, binary.BigEndian, tempDeparture)
-			utils.WriteNextBytes(file.Name(), binBuf.Bytes())
+			copy(arr[:], obj.FromCurrency.Name)
 
-			log.Printf("New rate [tinkoff] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
-			binBuf.Reset()
+			sell := math.Round(obj.Sell*10) / 10
+			needWriteToDatabase := true
+
+			if lastsell, ok := ratesTinkoff[obj.FromCurrency.Name]; ok {
+				if lastsell == sell {
+					needWriteToDatabase = false
+				}
+			} else {
+				ratesTinkoff[obj.FromCurrency.Name] = sell
+			}
+
+			if needWriteToDatabase {
+				tempDeparture := DepartureTinkoff{Name: arr, Sell: sell, Time: epochNow}
+				binary.Write(&binBuf, binary.BigEndian, tempDeparture)
+				utils.WriteNextBytes(file.Name(), binBuf.Bytes())
+
+				log.Printf("New rate [tinkoff] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
+				binBuf.Reset()
+			} else {
+				log.Printf("The course is already in the file Tinkoff")
+			}
 		}
 	}
-
 	return nil
 }
 

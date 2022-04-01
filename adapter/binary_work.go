@@ -6,20 +6,17 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"math"
 	"os"
 	"unsafe"
 )
 
 func GetRate(ticker string, file *os.File) (*Departure, error) {
-
-	//var m Departure2
-	//m := Departure2{}
-
 	var arr [8]byte
 	copy(arr[:], ticker)
 
 	for i := 1; i < 20; i++ {
-		m := Departure2{}
+		m := DepartureTinkoff{}
 		data := utils.ReadLastBytes(file, int64(unsafe.Sizeof(m)), int64(i))
 		buffer := bytes.NewBuffer(data)
 		_ = binary.Read(buffer, binary.BigEndian, &m)
@@ -35,13 +32,32 @@ func GetRate(ticker string, file *os.File) (*Departure, error) {
 }
 
 func GetRateByTimestamp(ticker string, file *os.File, timestamp int64) (*Departure, error) {
-	//m := Departure2{}
-	return &Departure{}, nil
+	firstStruct := DepartureTinkoff{}
+	secondStruct := DepartureTinkoff{}
+	//return &Departure{}, nil
 
-	//lastTimestampFile := utils.ReadLastBytes(file, int64(unsafe.Sizeof(m)), 1)
-	//firstTimestampFile := utils.ReadNextBytes(file, int64(unsafe.Sizeof(m)))
-	//bufferFirst := bytes.NewBuffer(firstTimestampFile)
-	//bufferLast := bytes.NewBuffer(lastTimestampFile)
+	lastTimestampFile := utils.ReadLastBytes(file, int64(unsafe.Sizeof(firstStruct)), 1)
+	firstTimestampFile := utils.ReadNextBytes(file, int64(unsafe.Sizeof(secondStruct)))
+	bufferFirst := bytes.NewBuffer(firstTimestampFile)
+	bufferLast := bytes.NewBuffer(lastTimestampFile)
+	err1 := binary.Read(bufferFirst, binary.BigEndian, &firstStruct)
+	if err1 != nil {
+		log.Println(err1)
+	}
+	err2 := binary.Read(bufferLast, binary.BigEndian, &secondStruct)
+	if err2 != nil {
+		log.Println(err2)
+	}
+
+	firstBorder := math.Abs(float64(timestamp - firstStruct.Time))
+	secondBorder := math.Abs(float64(secondStruct.Time - timestamp))
+
+	if firstBorder > secondBorder {
+
+		//return &Departure{}, nil
+	} else if secondBorder > firstBorder {
+		//return &Departure{}, nil
+	}
 	//
 	//firstBorder := math.Abs(timestamp - int64(firstTimestampFile))
 
@@ -69,5 +85,5 @@ func GetRateByTimestamp(ticker string, file *os.File, timestamp int64) (*Departu
 		}
 	}
 	return Departure{}*/
-
+	return &Departure{}, nil
 }
