@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -49,16 +50,60 @@ func GetRateByTimestamp(ticker string, file *os.File, timestamp int64) (*Departu
 		log.Println(err2)
 	}
 
+	if timestamp < firstStruct.Time || timestamp > secondStruct.Time {
+		return nil, fmt.Errorf("rate not found")
+	}
+
 	firstBorder := math.Abs(float64(timestamp - firstStruct.Time))
 	secondBorder := math.Abs(float64(secondStruct.Time - timestamp))
+
+
+	log.Printf("%f %f", firstBorder, secondBorder)
 
 	if firstBorder > secondBorder {
 
 		//return &Departure{}, nil
 	} else if secondBorder > firstBorder {
+		log.Printf("secondBorder > firstBorder")
+		i := 1
+		last := DepartureTinkoff{}
+		var current DepartureTinkoff
+
+		for {
+			tmp := utils.ReadLastBytes(file, int64(unsafe.Sizeof(current)), int64(i))
+			bufferTmp := bytes.NewBuffer(tmp)
+			err := binary.Read(bufferTmp, binary.BigEndian, &current)
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			//if last == nil {
+			//	last = &current
+			//}
+			log.Printf("%+v", current)
+			//
+			if current.Time == 0 {
+				break
+			}
+			//if last.Time > 0 {
+				log.Printf("%+v\n%+v", current, last)
+
+				if (current.Time - timestamp) > (last.Time - timestamp) {
+					return &Departure{
+						Sell: current.Sell,
+						Time: current.Time,
+					}, nil
+				}
+			//}
+			//
+
+			last = current
+			i++
+		}
 		//return &Departure{}, nil
 	}
-	//
+
+
 	//firstBorder := math.Abs(timestamp - int64(firstTimestampFile))
 
 	//надо понять, к какому из двух значений ближе, и от него искать
