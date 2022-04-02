@@ -8,7 +8,6 @@ import (
 
 func GetHistory(adapters []adapter.Adapter) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		ticker := c.Params("value")
 		timestamp := c.FormValue("t")
 		timestampInt64, err := strconv.ParseInt(timestamp, 10, 64)
 		if err != nil {
@@ -32,7 +31,7 @@ func GetHistory(adapters []adapter.Adapter) fiber.Handler {
 			})
 		}
 
-		rate, err := bank.GetRateByTimestampFromFile(ticker, timestampInt64)
+		rate, err := bank.GetRateByTimestampFromFile(timestampInt64)
 		if err != nil {
 			return c.JSON(fiber.Map{
 				"error": err.Error(),

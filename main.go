@@ -11,7 +11,6 @@ import (
 )
 
 func main() {
-	//tickers := []string{"USD","EUR"}
 	banks := []string{"tinkoff", "sber"}
 
 	var adapters adapter.Adapters
