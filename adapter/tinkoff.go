@@ -39,7 +39,7 @@ type Departure struct {
 	Time int64   `json:"time"`
 }
 
-type DepartureTinkoff struct {
+type DepartureBank struct {
 	Sell float64 `json:"sell"`
 	Time int64   `json:"time"`
 	Name [8]byte `json:"name"`
@@ -96,10 +96,9 @@ func (a *TAdapter) WriteRateToFile() error {
 			}
 
 			if needWriteToDatabase {
-				tempDeparture := DepartureTinkoff{Name: arr, Sell: sell, Time: epochNow}
+				tempDeparture := DepartureBank{Name: arr, Sell: sell, Time: epochNow}
 				binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 				utils.WriteNextBytes(file.Name(), binBuf.Bytes())
-
 				log.Printf("New rate [tinkoff] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
 				binBuf.Reset()
 			} else {
@@ -118,6 +117,6 @@ func (a *TAdapter) GetRateFromFile(ticker string) (*Departure, error) {
 	return GetRate(ticker, a.File)
 }
 
-func (a *TAdapter) GetRateByTimestampFromFile(ticker string, timestamp int64) (*Departure, error) {
-	return GetRateByTimestamp(ticker, a.File, timestamp)
+func (a *TAdapter) GetRateByTimestampFromFile(timestamp int64) (*Departure, error) {
+	return GetRateByTimestamp(a.File, timestamp)
 }

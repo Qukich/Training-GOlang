@@ -27,12 +27,6 @@ type SAdapter struct {
 	File *os.File
 }
 
-type DepartureSber struct {
-	Name [3]byte `json:"name"`
-	Sell float64 `json:"sell"`
-	Time int64   `json:"time"`
-}
-
 func init() {
 	ratesSber = make(map[string]float64)
 }
@@ -65,7 +59,7 @@ func (a *SAdapter) WriteRateToFile() error {
 	for ticker, obj := range result.Valute {
 		if utils.StringInArray(ticker, []string{"USD", "AMD"}) {
 			var binBuf bytes.Buffer
-			var arr [3]byte
+			var arr [8]byte
 			copy(arr[:], ticker)
 			sell := math.Round(obj.Value*10) / 10
 			needWriteToDatabase := true
@@ -79,7 +73,7 @@ func (a *SAdapter) WriteRateToFile() error {
 			}
 
 			if needWriteToDatabase {
-				tempDeparture := DepartureSber{Name: arr, Sell: sell, Time: epochNow}
+				tempDeparture := DepartureBank{Name: arr, Sell: sell, Time: epochNow}
 				binary.Write(&binBuf, binary.BigEndian, tempDeparture)
 				utils.WriteNextBytes(file.Name(), binBuf.Bytes())
 				log.Printf("New rate [sber] %s --- time %d: sell: %f\n", arr, tempDeparture.Time, tempDeparture.Sell)
@@ -101,6 +95,6 @@ func (a *SAdapter) GetRateFromFile(ticker string) (*Departure, error) {
 	return GetRate(ticker, a.File)
 }
 
-func (a *SAdapter) GetRateByTimestampFromFile(ticker string, timestamp int64) (*Departure, error) {
-	return GetRateByTimestamp(ticker, a.File, timestamp)
+func (a *SAdapter) GetRateByTimestampFromFile(timestamp int64) (*Departure, error) {
+	return GetRateByTimestamp(a.File, timestamp)
 }

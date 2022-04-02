@@ -16,10 +16,10 @@ func WriteNextBytes(file string, bytes []byte) {
 	}
 }
 
-func ReadNextBytes(file *os.File, numberByte int64) []byte {
+func ReadNextBytes(file *os.File, numberByte int64, i int64) []byte {
 	bytes := make([]byte, numberByte)
-
-	_, err := file.Read(bytes)
+	start := numberByte * i
+	_, err := file.ReadAt(bytes, start)
 	if err != nil {
 		log.Fatal(err)
 	}
